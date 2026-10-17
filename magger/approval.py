@@ -254,8 +254,48 @@ def _download_article_images(content_html, page_url, max_images=12, max_bytes=5_
     return embedded
 
 
+def _reader_extract(raw_html, base_url):
+    """Use Readability to isolate the article, then sanitize while retaining semantic HTML."""
+    try:
+        from readability import Document
+        document = Document(raw_html, url=base_url)
+        reader_html = document.summary(html_partial=True)
+        reader_title = document.short_title().strip()
+        parser = ArticleParser(base_url)
+        parser.feed(reader_html)
+        cleaned = "".join(parser.all_html).strip()
+        visible = re.sub(r"<[^>]+>", " ", cleaned)
+        visible = html.unescape(re.sub(r"\s+", " ", visible)).strip()
+        paragraphs = parser.main_paragraphs or parser.paragraphs
+        return reader_title, cleaned, paragraphs, len(visible)
+    except Exception as exc:
+        print(f"Warning: reader-mode extraction failed for {base_url}: {exc}")
+        return "", "", [], 0
+
+
+def _render_page_with_browser(url):
+    """Render JS-heavy pages in Chromium; return the final DOM or an empty string."""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            try:
+                page = browser.new_page(
+                    user_agent="Mozilla/5.0 (compatible; Magger/0.1; +https://github.com/xghxzxl/magger)",
+                    viewport={"width": 1280, "height": 1800},
+                )
+                page.goto(url, wait_until="domcontentloaded", timeout=25000)
+                page.wait_for_timeout(1200)
+                return page.content()
+            finally:
+                browser.close()
+    except Exception as exc:
+        print(f"Warning: headless browser rendering unavailable for {url}: {exc}")
+        return ""
+
+
 def fetch_article_content(article):
-    """Fetch and preserve readable HTML structure, falling back to the RSS synopsis."""
+    """Fetch article content with reader-mode extraction and a browser-rendered fallback."""
     url = article.get("url", "")
     try:
         req = urllib.request.Request(
@@ -266,20 +306,41 @@ def fetch_article_content(article):
             if "html" not in content_type and content_type:
                 raise ValueError("URL did not return HTML")
             final_url = response.geturl()
-            parser = ArticleParser(final_url)
-            parser.feed(response.read(3_000_000).decode("utf-8", errors="replace"))
+            raw_html = response.read(5_000_000).decode("utf-8", errors="replace")
 
-        main_html = "".join(parser.main_html).strip()
-        all_html = "".join(parser.all_html).strip()
-        chosen_html = main_html if len(re.sub(r"<[^>]+>", "", main_html)) >= 400 else all_html
-        # Keep semantic bodies even when an article is mostly headings, lists, or captions.
-        visible_text = re.sub(r"<[^>]+>", "", chosen_html)
-        if chosen_html and len(visible_text.strip()) >= 100:
-            if parser.meta.get("og:title") or parser.title:
-                article["title"] = html.unescape((parser.meta.get("og:title") or " ".join(parser.title)).strip())
-            article["content_html"] = chosen_html[:100_000]
+        reader_title, chosen_html, paragraphs, visible_length = _reader_extract(raw_html, final_url)
+        if visible_length < 500:
+            rendered_html = _render_page_with_browser(final_url)
+            if rendered_html:
+                browser_title, browser_content, browser_paragraphs, browser_length = _reader_extract(
+                    rendered_html, final_url
+                )
+                if browser_length > visible_length:
+                    reader_title, chosen_html, paragraphs, visible_length = (
+                        browser_title or reader_title,
+                        browser_content,
+                        browser_paragraphs,
+                        browser_length,
+                    )
+
+        # Retain the conservative parser as a fallback for unusual publisher markup.
+        if visible_length < 100:
+            parser = ArticleParser(final_url)
+            parser.feed(raw_html)
+            main_html = "".join(parser.main_html).strip()
+            all_html = "".join(parser.all_html).strip()
+            chosen_html = main_html if len(re.sub(r"<[^>]+>", "", main_html)) >= 400 else all_html
+            visible_length = len(re.sub(r"<[^>]+>", "", chosen_html).strip())
+            paragraphs = parser.main_paragraphs or parser.paragraphs
+            reader_title = reader_title or parser.meta.get("og:title") or " ".join(parser.title)
+
+        if chosen_html and visible_length >= 100:
+            if reader_title:
+                article["title"] = html.unescape(reader_title)
+            article["content_html"] = chosen_html[:150_000]
             article["embedded_images"] = _download_article_images(article["content_html"], final_url)
-            article["full_text"] = "\n\n".join(parser.main_paragraphs or parser.paragraphs)[:30000].strip()
+            article["full_text"] = "\n\n".join(paragraphs)[:40000].strip()
+            article["extraction_method"] = "reader-mode"
             return
     except Exception as exc:
         print(f"Warning: article text extraction failed for {url}: {exc}")
