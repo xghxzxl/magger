@@ -52,3 +52,20 @@ def test_build_epub_keeps_article_markup_and_adds_reading_styles(tmp_path: Path)
     assert "line-height" in css
     assert "max-width: 100%" in css
 
+
+
+def test_article_chapter_does_not_insert_summary_or_redundant_article_heading_by_default(tmp_path: Path):
+    target = tmp_path / "faithful.epub"
+    build_epub([{
+        "title": "Original Story Title", "url": "https://example.com/story", "feed": "Example",
+        "published": "2026-10-17", "editorial_summary": "This synopsis is not part of the original article.",
+        "content_html": "<h2>Original section</h2><p>The original article starts here.</p>",
+    }], {"title": "Magger"}, target)
+    with ZipFile(target) as archive:
+        chapter = next(archive.read(name).decode("utf-8") for name in archive.namelist() if name.endswith("article-1.xhtml"))
+        css = next(archive.read(name).decode("utf-8") for name in archive.namelist() if name.endswith("magger.css"))
+    assert "<h2>Original section</h2>" in chapter
+    assert "This synopsis is not part of the original article." not in chapter
+    assert "<h2>Article</h2>" not in chapter
+    assert 'font-family: "Georgia"' in css
+    assert "line-height: 1.55" in css
