@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 def send_to_kindle(epub_path: str | Path) -> None:
-    host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    port = int(os.environ.get("SMTP_PORT", "465"))
+    host = os.environ.get("SMTP_HOST") or "smtp.gmail.com"
+    port = int(os.environ.get("SMTP_PORT") or "465")
     username = os.environ.get("SMTP_USERNAME")
     password = os.environ.get("SMTP_PASSWORD")
     sender = os.environ.get("KINDLE_SENDER_EMAIL") or username
