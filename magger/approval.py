@@ -155,7 +155,13 @@ class ArticleParser(MetaParser):
             if attrs.get("title"):
                 safe_attrs += f' title="{html.escape(attrs["title"], quote=True)}"'
         elif tag == "img":
-            src = urljoin(self.base_url, attrs.get("src", ""))
+            raw_src = (
+                attrs.get("data-src") or attrs.get("data-original") or attrs.get("data-lazy-src")
+                or attrs.get("src") or ""
+            )
+            if not raw_src and attrs.get("srcset"):
+                raw_src = attrs["srcset"].split(",", 1)[0].strip().split(" ", 1)[0]
+            src = urljoin(self.base_url, raw_src)
             if urlsplit(src).scheme not in ("http", "https"):
                 return
             safe_attrs = f' src="{html.escape(src, quote=True)}"'
