@@ -103,3 +103,26 @@ def test_article_parser_preserves_semantic_formatting_and_links():
     assert "Navigation text" not in rendered
 
 
+
+
+def test_reader_mode_extraction_preserves_semantic_article_structure():
+    raw = """<!doctype html><html><head><title>Long-form story | Example</title></head><body>
+    <nav><a href="/">Home</a><p>Navigation noise repeated in every page.</p></nav>
+    <article><h1>Long-form story</h1>
+    <p>This is a substantial opening paragraph that introduces the topic and provides enough useful detail for the reader extraction algorithm to identify the article body reliably.</p>
+    <figure><img src="/photos/lead.jpg" alt="Lead image"><figcaption>A carefully written image caption.</figcaption></figure>
+    <h2>Why it matters</h2>
+    <p>This second substantial paragraph preserves <strong>emphasis</strong>, <em>voice</em>, and a <a href="/context">context link</a> as part of the original article.</p>
+    <blockquote><p>A quotation from the interview should remain a quotation.</p></blockquote>
+    <ul><li>First point</li><li>Second point</li></ul>
+    </article><aside>Related stories should not be in the main article.</aside></body></html>"""
+    title, content, paragraphs, visible_length = approval._reader_extract(raw, "https://example.com/story")
+    assert title
+    assert visible_length > 100
+    assert "<h2>Why it matters</h2>" in content
+    assert "<strong>emphasis</strong>" in content
+    assert "<blockquote>" in content
+    assert "<figcaption>" in content
+    assert 'href="https://example.com/context"' in content
+    assert "Navigation noise" not in content
+    assert "Related stories" not in content
