@@ -15,7 +15,7 @@ on:
           - publish
         default: review
       draft_run_id:
-        description: Run ID of the review workflow whose artifact you are approving (publish only)
+        description: Optional review run ID; leave blank to use the latest available review draft (publish only)
         required: false
         type: string
       include:
@@ -77,13 +77,33 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Resolve review run ID
+        id: review_run
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
+        env:
+          REQUESTED_RUN_ID: ${{ inputs.draft_run_id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "$REQUESTED_RUN_ID" ]; then
+            run_id="$REQUESTED_RUN_ID"
+          else
+            artifact_name="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("magger-draft-")))] | sort_by(.created_at) | last | .name // empty')"
+            if [ -z "$artifact_name" ]; then
+              echo "::error::No unexpired Magger review draft found. Run mode=review first, or provide draft_run_id."
+              exit 1
+            fi
+            run_id="${artifact_name#magger-draft-}"
+            echo "No draft_run_id provided; using latest review artifact from run $run_id."
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
       - name: Download reviewed draft
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
         uses: actions/download-artifact@v4
         with:
-          name: magger-draft-${{ inputs.draft_run_id }}
+          name: magger-draft-${{ steps.review_run.outputs.run_id }}
           path: draft
-          run-id: ${{ inputs.draft_run_id }}
+          run-id: ${{ steps.review_run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and deliver approved edition
