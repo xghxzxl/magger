@@ -49,6 +49,95 @@ class MetaParser(HTMLParser):
     def handle_data(self,data):
         if self.in_title and data.strip(): self.title.append(data.strip())
 
+class ArticleParser(MetaParser):
+    """Extract readable paragraphs, preferring article/main content."""
+    SKIP = {"script", "style", "nav", "footer", "header", "aside", "form", "noscript", "svg"}
+    def __init__(self):
+        super().__init__()
+        self.stack = []
+        self.paragraph = []
+        self.paragraphs = []
+        self.main_paragraphs = []
+        self.main_depth = 0
+        self.in_paragraph = False
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        attrs_dict = dict(attrs)
+        self.stack.append(tag)
+        if tag in ("main", "article"):
+            self.main_depth += 1
+        if tag == "title":
+            self.in_title = True
+        if tag == "meta":
+            key = (attrs_dict.get("property") or attrs_dict.get("name") or "").lower()
+            if key and attrs_dict.get("content"):
+                self.meta.setdefault(key, attrs_dict["content"])
+        if tag == "p":
+            self.in_paragraph = True
+            self.paragraph = []
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag == "title":
+            self.in_title = False
+        if tag == "p" and self.in_paragraph:
+            text = " ".join(" ".join(self.paragraph).split())
+            if len(text) > 25:
+                self.paragraphs.append(text)
+                if self.main_depth:
+                    self.main_paragraphs.append(text)
+            self.paragraph = []
+            self.in_paragraph = False
+        if tag in ("main", "article") and self.main_depth:
+            self.main_depth -= 1
+        if tag in self.stack:
+            # HTML can be malformed; unwind through the matching open element.
+            pos = len(self.stack) - 1 - self.stack[::-1].index(tag)
+            del self.stack[pos:]
+
+    def handle_data(self, data):
+        if self.in_title and data.strip():
+            self.title.append(data.strip())
+        if self.in_paragraph and not any(tag in self.SKIP for tag in self.stack):
+            value = data.strip()
+            if value:
+                self.paragraph.append(value)
+
+
+def fetch_article_content(article):
+    """Fetch article HTML and attach readable text, falling back to the RSS synopsis."""
+    url = article.get("url", "")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; Magger/0.1; +https://github.com/xghxzxl/magger)"})
+        with urllib.request.urlopen(req, timeout=20) as response:
+            content_type = response.headers.get("Content-Type", "").lower()
+            if "html" not in content_type and content_type:
+                raise ValueError("URL did not return HTML")
+            parser = ArticleParser()
+            parser.feed(response.read(3_000_000).decode("utf-8", errors="replace"))
+        paragraphs = parser.main_paragraphs if sum(map(len, parser.main_paragraphs)) >= 400 else parser.paragraphs
+        # De-duplicate repeated text often found in page templates.
+        unique = []
+        seen_paragraphs = set()
+        for paragraph in paragraphs:
+            key = paragraph.casefold()
+            if key not in seen_paragraphs:
+                unique.append(paragraph)
+                seen_paragraphs.add(key)
+        full_text = "\\n\\n".join(unique)[:30000].strip()
+        if full_text:
+            article["full_text"] = full_text
+            if parser.meta.get("og:title") or parser.title:
+                article["title"] = html.unescape((parser.meta.get("og:title") or " ".join(parser.title)).strip())
+            return
+    except Exception as exc:
+        print(f"Warning: article text extraction failed for {url}: {exc}")
+    fallback = article.get("description") or article.get("synopsis") or article.get("editorial_summary") or ""
+    article["full_text"] = _rss_summary(fallback, article.get("title", "Article"), 1000)
+    article["content_fallback"] = True
+
+
 def manual_article(raw):
     url=canonical_url(raw.strip())
     if urlsplit(url).scheme not in ("http","https") or not urlsplit(url).netloc: raise ValueError("Invalid http(s) URL: "+raw)
