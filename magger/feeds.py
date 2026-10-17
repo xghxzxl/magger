@@ -58,7 +58,7 @@ def fetch_recent(feeds: list[dict[str, str]], lookback_days: int, now: datetime 
             continue
         for entry in parsed.entries:
             link = entry.get("link")
-            if not link or not urlsplit(link).scheme.startswith("http"):
+            if not link or urlsplit(link).scheme.lower() not in ("http", "https"):
                 continue
             published = _parse_date(entry)
             # Undated entries are excluded: the lookback window must be meaningful.
