@@ -148,6 +148,7 @@ jobs:
             cp data/seen.json "$RUNNER_TEMP/seen-local.json"
             for attempt in 1 2 3; do
               git fetch origin main
+              git reset --hard origin/main
               git checkout origin/main -- data/seen.json
               python - "$RUNNER_TEMP/seen-local.json" data/seen.json <<'PY'
           import json
