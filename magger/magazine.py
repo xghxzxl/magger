@@ -129,7 +129,7 @@ def build_epub(
             f'<p class="article-byline">{source} · {published}</p>',
         ]
         if summary and settings.get("include_synopsis", False):
-            body.append(f'<div class="synopsis"><h2>Editor's note</h2><p>{summary}</p></div>')
+            body.append(f'<div class="synopsis"><h2>Editor&#39;s note</h2><p>{summary}</p></div>')
         if content_html:
             body.append('<div class="article-body">' + content_html + "</div>")
         elif full_text:
