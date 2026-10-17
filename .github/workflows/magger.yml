@@ -109,6 +109,10 @@ jobs:
           run-id: ${{ steps.review_run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Chromium for reader-mode extraction
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
+        run: python -m playwright install --with-deps chromium
+
       - name: Build and deliver approved edition
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
         env:
