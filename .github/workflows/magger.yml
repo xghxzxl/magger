@@ -43,10 +43,8 @@ jobs:
       - name: Run tests
         run: pytest -q
 
-      - name: Curate and publish
+      - name: Build and deliver RSS-only magazine
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           SMTP_HOST: ${{ vars.SMTP_HOST }}
           SMTP_PORT: ${{ vars.SMTP_PORT }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
