@@ -228,14 +228,14 @@ def fetch_article_content(article):
         main_html = "".join(parser.main_html).strip()
         all_html = "".join(parser.all_html).strip()
         chosen_html = main_html if len(re.sub(r"<[^>]+>", "", main_html)) >= 400 else all_html
-        # De-duplicate repeated paragraphs while preserving their HTML and order.
-        if chosen_html:
+        # Keep semantic bodies even when an article is mostly headings, lists, or captions.
+        visible_text = re.sub(r"<[^>]+>", "", chosen_html)
+        if chosen_html and len(visible_text.strip()) >= 100:
             if parser.meta.get("og:title") or parser.title:
                 article["title"] = html.unescape((parser.meta.get("og:title") or " ".join(parser.title)).strip())
             article["content_html"] = chosen_html[:100_000]
             article["full_text"] = "\n\n".join(parser.main_paragraphs or parser.paragraphs)[:30000].strip()
-            if article["full_text"]:
-                return
+            return
     except Exception as exc:
         print(f"Warning: article text extraction failed for {url}: {exc}")
     fallback = article.get("description") or article.get("synopsis") or article.get("editorial_summary") or ""
