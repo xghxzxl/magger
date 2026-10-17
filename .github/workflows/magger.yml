@@ -159,7 +159,7 @@ jobs:
           remote = json.loads(merged_path.read_text(encoding="utf-8"))
           seen = remote.setdefault("seen", {})
           seen.update(local.get("seen", {}))
-          merged_path.write_text(json.dumps(remote, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+          merged_path.write_text(json.dumps(remote, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
           PY
               git add data/seen.json
               git commit -m "Update Magger deduplication state" || true
