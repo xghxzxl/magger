@@ -9,6 +9,16 @@
       "url": "https://www.pv-magazine.com/2026/09/29/solar-surpasses-nuclear-power-globally-for-first-time",
       "published": "2026-10-17T14:01:01+00:00",
       "checked_at": "2026-10-17T17:37:10.763130+00:00"
+    },
+    "c7d27156a54c34ab1026f2726e95664a1424142af6d97be909801168edb99a6c": {
+      "url": "https://www.opendemocracy.net/amazon-ai-surveillance-monitor-union-activity-uk-warehouses-birmingham-coventry-atlas-sutton-coldfield",
+      "published": "2026-10-17T16:04:23+00:00",
+      "checked_at": "2026-10-17T17:46:54.208080+00:00"
+    },
+    "02427232eda6c5bcac052fccd8e5593da8f55e092140b8c9a314fc02ce2a87d9": {
+      "url": "https://github.com/mikroverk/esp32sim",
+      "published": "2026-10-17T13:51:08+00:00",
+      "checked_at": "2026-10-17T17:46:54.208080+00:00"
     }
   }
 }
