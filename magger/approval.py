@@ -131,7 +131,8 @@ class ArticleParser(MetaParser):
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
         attrs = dict(attrs)
-        self.stack.append(tag)
+        if tag not in self.VOID:
+            self.stack.append(tag)
         if tag in ("main", "article"):
             self.main_depth += 1
         if tag == "title":
