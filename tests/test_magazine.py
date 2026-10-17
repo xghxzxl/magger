@@ -4,7 +4,7 @@ from zipfile import ZipFile
 from magger.magazine import build_epub
 
 
-def test_build_epub_includes_summary_and_source_link(tmp_path: Path):
+def test_build_epub_preserves_source_link_without_inserting_summary(tmp_path: Path):
     target = tmp_path / "issue.epub"
     build_epub([{
         "title": "Useful Article", "url": "https://example.com/story", "feed": "Example Feed",
@@ -15,7 +15,7 @@ def test_build_epub_includes_summary_and_source_link(tmp_path: Path):
     with ZipFile(target) as archive:
         text = b"".join(archive.read(name) for name in archive.namelist() if name.endswith(".xhtml")).decode("utf-8")
     assert "Useful Article" in text
-    assert "A concise and faithful summary." in text
+    assert "A concise and faithful summary." not in text
     assert "https://example.com/story" in text
 
 def test_build_epub_keeps_article_markup_and_adds_reading_styles(tmp_path: Path):
@@ -69,3 +69,15 @@ def test_article_chapter_does_not_insert_summary_or_redundant_article_heading_by
     assert "<h2>Article</h2>" not in chapter
     assert 'font-family: "Georgia"' in css
     assert "line-height: 1.55" in css
+
+
+def test_synopsis_can_be_enabled_explicitly(tmp_path: Path):
+    target = tmp_path / "synopsis.epub"
+    build_epub([{
+        "title": "A Story", "url": "https://example.com/story", "feed": "Example",
+        "published": "2026-10-17", "editorial_summary": "An optional editorial synopsis.",
+        "content_html": "<p>The source article body.</p>",
+    }], {"title": "Magger", "include_synopsis": True}, target)
+    with ZipFile(target) as archive:
+        chapter = next(archive.read(name).decode("utf-8") for name in archive.namelist() if name.endswith("article-1.xhtml"))
+    assert "An optional editorial synopsis." in chapter
