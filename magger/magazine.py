@@ -12,21 +12,31 @@ from ebooklib import epub
 
 
 STYLE = """
-body { font-family: serif; line-height: 1.42; margin: 5%; }
-h1 { font-size: 1.65em; margin: 0 0 0.65em; }
-h2 { font-size: 1.35em; margin: 1.25em 0 0.45em; }
-h3, h4, h5, h6 { margin: 1em 0 0.4em; }
-p { margin: 0 0 0.9em; text-indent: 0; }
-li { margin: 0 0 0.45em; }
-blockquote { margin: 0.9em 0.9em 1em; padding-left: 0.8em; border-left: 2px solid #888; }
+body { font-family: "Georgia", "Palatino Linotype", Palatino, serif; line-height: 1.55; margin: 6% 7%; widows: 2; orphans: 2; }
+h1 { font-family: "Georgia", "Palatino Linotype", Palatino, serif; font-size: 1.8em; line-height: 1.12; font-weight: normal; margin: 0 0 0.55em; page-break-after: avoid; }
+h2 { font-size: 1.3em; line-height: 1.2; font-weight: normal; margin: 1.55em 0 0.55em; page-break-after: avoid; }
+h3, h4, h5, h6 { line-height: 1.25; margin: 1.25em 0 0.45em; page-break-after: avoid; }
+p { margin: 0 0 1em; text-indent: 0; }
+.article-byline { font-family: sans-serif; font-size: 0.78em; letter-spacing: 0.035em; margin: 0 0 1.8em; }
+.article-body { margin-top: 1.4em; }
+.article-body > p:first-child { margin-top: 0; }
+.article-body img { display: block; max-width: 100%; height: auto; margin: 1.1em auto; }
+.article-body figure { margin: 1.5em 0; page-break-inside: avoid; }
+.article-body figcaption { font-family: sans-serif; font-size: 0.82em; line-height: 1.35; margin-top: 0.55em; text-align: center; }
+.article-body blockquote { margin: 1.2em 0.8em; padding-left: 0.9em; border-left: 2px solid #888; font-style: italic; }
+.article-body blockquote p { margin-bottom: 0.65em; }
+.article-body ul, .article-body ol { padding-left: 1.5em; margin: 0.8em 0 1.2em; }
+.article-body li { margin: 0 0 0.55em; padding-left: 0.15em; }
+.article-body hr { margin: 1.6em auto; width: 25%; }
 pre, code { font-family: monospace; white-space: pre-wrap; }
 pre { margin: 0.8em 0; padding: 0.5em; }
-figure { margin: 1em 0; }
-figcaption { font-size: 0.9em; font-style: italic; margin-top: 0.4em; }
 img { max-width: 100%; height: auto; }
-table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-th, td { border: 1px solid #888; padding: 0.3em; vertical-align: top; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: 0.9em; }
+th, td { border: 1px solid #888; padding: 0.4em; vertical-align: top; }
 small { font-size: 0.85em; }
+.synopsis { margin: 1.5em 0; padding: 0.8em 1em; border-top: 1px solid #888; border-bottom: 1px solid #888; }
+.synopsis h2 { font-family: sans-serif; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.5em; }
+.synopsis p { margin: 0; font-size: 0.95em; }
 """
 
 
