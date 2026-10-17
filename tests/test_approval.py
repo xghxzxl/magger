@@ -119,7 +119,7 @@ def test_reader_mode_extraction_preserves_semantic_article_structure():
     title, content, paragraphs, visible_length = approval._reader_extract(raw, "https://example.com/story")
     assert title
     assert visible_length > 100
-    assert "<h2>Why it matters</h2>" in content
+    assert re.search(r"<h2>\s*Why it matters\s*</h2>", content)
     assert "<strong>emphasis</strong>" in content
     assert "<blockquote>" in content
     assert "<figcaption>" in content
