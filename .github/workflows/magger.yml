@@ -29,8 +29,16 @@ on:
         description: Additional article URLs, one per line (publish only)
         required: false
         type: string
+      output_format:
+        description: Edition format to generate and send
+        required: true
+        type: choice
+        options:
+          - pdf
+          - epub
+        default: pdf
       no_email:
-        description: Build preview EPUB without sending it to Kindle
+        description: Build preview without sending it to Kindle
         required: false
         type: boolean
         default: false
@@ -125,17 +133,18 @@ jobs:
           APPROVED_INCLUDE: ${{ inputs.include }}
           APPROVED_URLS: ${{ inputs.extra_urls }}
           PREVIEW_ONLY: ${{ inputs.no_email }}
+          OUTPUT_FORMAT: ${{ inputs.output_format }}
         run: |
-          args=(publish --draft draft/manifest.json --include "$APPROVED_INCLUDE" --extra-urls "$APPROVED_URLS")
+          args=(publish --draft draft/manifest.json --include "$APPROVED_INCLUDE" --extra-urls "$APPROVED_URLS" --format "$OUTPUT_FORMAT")
           if [ "$PREVIEW_ONLY" = "true" ]; then args+=(--no-email); fi
           python -m magger.approval "${args[@]}"
 
-      - name: Upload EPUB artifact
+      - name: Upload generated edition
         if: always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'publish'
         uses: actions/upload-artifact@v4
         with:
-          name: magger-epub-${{ github.run_number }}
-          path: dist/*.epub
+          name: magger-edition-${{ github.run_number }}
+          path: dist/*
           if-no-files-found: warn
           retention-days: 30
 
