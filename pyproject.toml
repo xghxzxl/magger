@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magger"
+version = "0.1.0"
+description = "Curate RSS feeds into an editorial EPUB magazine for Kindle using GitHub Actions."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "feedparser>=6.0.11,<7",
+  "openai>=1.40,<3",
+  "ebooklib>=0.18,<0.20",
+  "PyYAML>=6.0.2,<7",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9"]
+
+[tool.setuptools.packages.find]
+include = ["magger*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
