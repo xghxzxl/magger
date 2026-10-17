@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import html
+from io import BytesIO
 import re
 from datetime import datetime
 from pathlib import Path
@@ -74,10 +75,18 @@ def _article_html(article: dict[str, Any]) -> str:
                 flags=re.I,
             )
     original = f'<p><a href="{html.escape(url, quote=True)}">Open original article</a></p>' if url else ""
-    body = content or (
-        "<p><em>The full article could not be extracted. This entry contains the available "
-        "RSS excerpt rather than the complete article.</em></p>"
-    )
+    if not content:
+        fallback_text = str(article.get("full_text") or article.get("description") or article.get("synopsis") or "").strip()
+        if fallback_text:
+            body = "".join(
+                f"<p>{html.escape(part.strip())}</p>"
+                for part in re.split(r"\n\s*\n", fallback_text)
+                if part.strip()
+            )
+        else:
+            body = "<p><em>The full article could not be extracted. This entry contains the available RSS excerpt rather than the complete article.</em></p>"
+    else:
+        body = content
     return f"""<!doctype html><html><head><meta charset="utf-8"><style>{PRINT_CSS}</style></head>
 <body><article><h1>{title}</h1><div class="article-meta">{source} · {published}</div>
 <div class="article-body">{body}</div>{original}</article></body></html>"""
@@ -104,7 +113,7 @@ def build_pdf(
         article_title = html.escape(str(article.get("title") or "Untitled"))
         source = html.escape(str(article.get("feed") or "Source"))
         cover_rows.append(
-            f'<li><a href="#article-{index}">{article_title}</a>'
+            f'<li>{article_title}'
             f'<span class="source">{source}</span></li>'
         )
     cover_html = f"""<!doctype html><html><head><meta charset="utf-8"><style>{PRINT_CSS}
@@ -144,13 +153,13 @@ def build_pdf(
             browser.close()
 
     writer = PdfWriter()
-    reader = PdfReader(temp_pdfs[0])
+    reader = PdfReader(BytesIO(temp_pdfs[0]))
     for page in reader.pages:
         writer.add_page(page)
-    writer.add_outline_item("Contents", 0)
+    writer.add_outline_item("Contents", min(1, len(reader.pages) - 1))
     page_index = len(reader.pages)
     for index, (article, pdf_bytes) in enumerate(zip(articles, temp_pdfs[1:]), 1):
-        reader = PdfReader(pdf_bytes)
+        reader = PdfReader(BytesIO(pdf_bytes))
         writer.add_outline_item(str(article.get("title") or f"Article {index}"), page_index)
         for page in reader.pages:
             writer.add_page(page)
