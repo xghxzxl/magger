@@ -1,16 +1,16 @@
 # Magger
 
-Magger turns recent RSS/Atom entries into a weekly EPUB magazine and can send it to a Kindle email address. Everything runs in GitHub Actions; no LLM or paid AI API is used.
+Magger prepares a weekly RSS/Atom reading list, lets you explicitly approve stories in GitHub Actions, then builds a Kindle-ready EPUB from only the approved items. It runs in GitHub Actions and does not use an LLM or paid AI API.
 
-## What it does
+## Editorial workflow
 
-1. Reads feeds in `config/feeds.yml`.
-2. Collects entries published within the configured lookback window, using feed metadata and excerpts only.
-3. Deduplicates canonical URLs and filters articles included in previous successful editions.
-4. Selects the newest unseen entries up to `max_articles`. This is date/feed-order selection, **not semantic or quality judging**.
-5. Builds a navigable EPUB with the RSS excerpt (or a fallback if no excerpt exists), source/feed attribution, publication date, and source link.
-6. Optionally emails the EPUB to the configured Kindle address.
-7. Uploads the EPUB as a GitHub Actions artifact (30-day retention) and persists deduplication state after successful delivery.
+1. **Review run:** every Sunday at 12:00 UTC (or manually with Actions → Magger Weekly → Run workflow → mode: review) fetches recent RSS entries within the lookback window, excludes articles already delivered, and lists each candidate's title, RSS synopsis, source, date, and link in the Actions run summary. The candidate manifest is saved as a 14-day artifact. A review run never emails anything.
+2. **Choose what to publish:** open the review run, copy its numeric run ID from the URL, then start another workflow run with mode: publish. Enter that ID as draft_run_id. Put the candidate numbers you want in include as a comma-separated list (for example, 1,3,4). Anything omitted is excluded. Add any non-RSS article URLs in extra_urls, one URL per line.
+3. **Publish:** the workflow retrieves that exact draft artifact and builds an EPUB from the explicitly selected RSS entries and manually supplied URLs. By default it emails the EPUB to your Kindle. Select no_email for a preview; previews do not change deduplication state. After successful email delivery, selected article URLs are recorded so they do not reappear as new candidates.
+
+**Nothing is automatically approved.** A blank include input means no RSS stories are selected; you may still provide manual URLs. If you choose no stories and provide no URLs, publishing fails safely without sending an edition. Manual links use page metadata (title/description) when available; if a site blocks fetching, the URL is used as a fallback title. RSS synopses are shortened feed excerpts, not AI-generated summaries or claims that Magger read the full article.
+
+The draft artifact expires after 14 days. If it expires, run review again and use the new run ID.
 
 ## Configure feeds and issue settings
 
@@ -22,7 +22,7 @@ feeds:
     url: https://example.com/feed.xml
 ```
 
-Edit `config/editorial.yml` to configure the issue:
+Edit `config/editorial.yml`:
 
 ```yaml
 magazine:
@@ -34,17 +34,15 @@ magazine:
   summary_max_words: 100
 ```
 
-The summaries are shortened RSS excerpts, not AI-written summaries or claims that Magger has read the full article. Articles are chosen by publication date, so promotional posts and lower-quality entries can be included; tune your feed list to control the results.
+## Kindle delivery secrets
 
-## Set up secure Kindle delivery
-
-In **Settings → Secrets and variables → Actions**, add these repository secrets:
+In **Settings → Secrets and variables → Actions**, configure these repository secrets:
 
 | Secret | Purpose |
 | --- | --- |
 | `SMTP_USERNAME` | SMTP account username |
 | `SMTP_PASSWORD` | SMTP password or app password |
-| `KINDLE_EMAIL` | Your personal Send-to-Kindle email address |
+| `KINDLE_EMAIL` | Your Send-to-Kindle email address |
 | `KINDLE_SENDER_EMAIL` | Sender address used for outgoing email |
 
 Optional repository variables:
@@ -54,37 +52,29 @@ Optional repository variables:
 | `SMTP_HOST` | `smtp.gmail.com` | SMTP hostname |
 | `SMTP_PORT` | `465` | SMTP SSL port |
 
-For Gmail, use an app password if available. In your Kindle settings, confirm the correct Send-to-Kindle address and add the sender address to approved personal document senders if required.
+For Gmail, use an app password if available. Add the sender address to your Kindle approved personal document senders if required. Never commit passwords or recipient addresses. No OpenAI API key is needed.
 
-**Never commit passwords or personal recipient addresses to tracked files.** The workflow injects secrets at runtime. No OpenAI API key is needed.
-
-## Run it
-
-Open **Actions → Magger Weekly → Run workflow**. The default manual run sends the EPUB. Set **Build an EPUB but skip Kindle email delivery** to true to preview without sending.
-
-The workflow is scheduled for **Sunday at 12:00 UTC**; GitHub may delay scheduled runs during busy periods. It declares `contents: write` so the workflow can commit `data/seen.json`. If your repository's Actions settings disallow write tokens, enable the required contents write permission.
-
-Local run (Python 3.11+):
+## Local development
 
 ```bash
 python -m pip install -e ".[test]"
 pytest -q
-python -m magger --no-email
+python -m magger.approval review
 ```
 
-The command writes an EPUB under `dist/`. Use a temporary state path when experimenting:
+The review command writes `draft/manifest.json`. For a local preview, after reviewing candidate numbers in the generated manifest, run:
 
 ```bash
-python -m magger --state /tmp/magger-seen.json --output /tmp/magger.epub --no-email
+python -m magger.approval publish --draft draft/manifest.json --include 1,3 --no-email
 ```
 
 ## Layout
 
 - `config/feeds.yml` — RSS/Atom sources
-- `config/editorial.yml` — issue settings
-- `magger/feeds.py` — parsing, date filtering, URL normalization
+- `config/editorial.yml` — magazine settings
+- `magger/feeds.py` — feed parsing, date filtering, URL normalization
+- `magger/approval.py` — review manifest, manual URL metadata, explicit approval
 - `magger/magazine.py` — EPUB generation
 - `magger/delivery.py` — SMTP delivery
-- `magger/cli.py` — RSS-only pipeline and state
-- `.github/workflows/magger.yml` — weekly/manual Actions workflow
+- `.github/workflows/magger.yml` — scheduled review and manual publish workflow
 - `tests/` — unit tests
