@@ -77,3 +77,28 @@ def test_epub_has_contents_list_and_full_text(tmp_path):
     assert "A Real Story" in xhtml
     assert "First full paragraph with actual reporting." in xhtml
     assert "Second full paragraph with more details." in xhtml
+
+def test_article_parser_preserves_semantic_formatting_and_links():
+    parser = approval.ArticleParser("https://example.com/story")
+    parser.feed("""
+    <nav><p>Navigation text should be removed completely.</p></nav>
+    <main><article>
+      <h2>A section heading</h2>
+      <p>This paragraph has <strong>bold emphasis</strong>, <em>italic text</em>,
+      and <a href="/related">a related link</a> in it.</p>
+      <ul><li>First item in a list</li><li>Second item in a list</li></ul>
+      <blockquote><p>A quotation that should remain formatted.</p></blockquote>
+      <figure><img src="/images/chart.png" alt="A chart"/><figcaption>Chart caption</figcaption></figure>
+    </article></main>
+    """)
+    rendered = "".join(parser.main_html)
+    assert "<h2>A section heading</h2>" in rendered
+    assert "<strong>bold emphasis</strong>" in rendered
+    assert "<em>italic text</em>" in rendered
+    assert 'href="https://example.com/related"' in rendered
+    assert "<ul>" in rendered and "<li>" in rendered
+    assert "<blockquote>" in rendered
+    assert 'src="https://example.com/images/chart.png"' in rendered
+    assert "Navigation text" not in rendered
+
+
