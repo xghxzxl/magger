@@ -89,7 +89,7 @@ def test_article_parser_preserves_semantic_formatting_and_links():
       and <a href="/related">a related link</a> in it.</p>
       <ul><li>First item in a list</li><li>Second item in a list</li></ul>
       <blockquote><p>A quotation that should remain formatted.</p></blockquote>
-      <figure><img src="/images/chart.png" alt="A chart"/><figcaption>Chart caption</figcaption></figure>
+      <figure><img src="data:image/gif;base64,placeholder" data-src="/images/chart.png" alt="A chart"/><figcaption>Chart caption</figcaption></figure>
     </article></main>
     """)
     rendered = "".join(parser.main_html)
