@@ -109,7 +109,7 @@ def build_epub(
                 quote = match.group(2)
                 return f'{match.group(1)}{quote}{html.escape(local_path, quote=True)}{quote}'
             content_html = re.sub(
-                r'(<img\b[^>]*?\bsrc=)(["\'])(.*?)\2',
+                r"""(<img\b[^>]*?\bsrc=)(["\'])(.*?)\2""",
                 replace_image_src,
                 content_html,
                 flags=re.I,
