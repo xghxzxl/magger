@@ -214,7 +214,7 @@ class ArticleParser(MetaParser):
 
 def _download_article_images(content_html, page_url, max_images=12, max_bytes=5_000_000):
     """Download article images for embedding; skip unsupported, oversized, or unavailable assets."""
-    found = re.findall(r'<img\\b[^>]*?src=["\']([^"\']+)["\']', content_html, flags=re.I)
+    found = re.findall(r'<img\b[^>]*?src=["\']([^"\']+)["\']', content_html, flags=re.I)
     embedded = {}
     total_bytes = 0
     allowed_types = {
