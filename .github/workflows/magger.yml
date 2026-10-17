@@ -144,8 +144,32 @@ jobs:
         run: |
           if ! git diff --quiet -- data/seen.json; then
             git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/seen.json
-            git commit -m "Update Magger deduplication state"
-            git push
+            git config user.email "41898282+users.noreply.github.com"
+            cp data/seen.json "$RUNNER_TEMP/seen-local.json"
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git checkout origin/main -- data/seen.json
+              python - "$RUNNER_TEMP/seen-local.json" data/seen.json <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          local_path, merged_path = map(Path, sys.argv[1:])
+          local = json.loads(local_path.read_text(encoding="utf-8"))
+          remote = json.loads(merged_path.read_text(encoding="utf-8"))
+          seen = remote.setdefault("seen", {})
+          seen.update(local.get("seen", {}))
+          merged_path.write_text(json.dumps(remote, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+          PY
+              git add data/seen.json
+              git commit -m "Update Magger deduplication state" || true
+              if git push origin HEAD:main; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "::error::Could not persist deduplication state after 3 attempts."
+                exit 1
+              fi
+              git reset --hard origin/main
+            done
           fi
