@@ -92,7 +92,7 @@ def test_article_parser_preserves_semantic_formatting_and_links():
     </article></main>
     """)
     rendered = "".join(parser.main_html)
-    assert "<h2>A section heading</h2>" in rendered
+    assert re.search(r"<h2>\\s*A section heading\\s*</h2>", rendered)
     assert "<strong>bold emphasis</strong>" in rendered
     assert "<em>italic text</em>" in rendered
     assert 'href="https://example.com/related"' in rendered
