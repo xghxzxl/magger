@@ -26,13 +26,25 @@ def test_build_epub_keeps_article_markup_and_adds_reading_styles(tmp_path: Path)
         "content_html": (
             "<h2>Section heading</h2><p>A paragraph with <strong>bold</strong> and "
             "<em>emphasis</em>.</p><ul><li>First item</li><li>Second item</li></ul>"
+            '<figure><img src="https://example.com/images/chart.png" alt="Chart"/></figure>'
         ),
+        "embedded_images": {
+            "https://example.com/images/chart.png": {
+                "data": b"fake-png-image-bytes",
+                "media_type": "image/png",
+                "extension": ".png",
+            }
+        },
     }], {"title": "Test Mag"}, target)
     with ZipFile(target) as archive:
         names = archive.namelist()
         article = next(archive.read(name).decode("utf-8") for name in names if name.endswith("article-1.xhtml"))
         css_name = next(name for name in names if name.endswith("style/magger.css"))
         css = archive.read(css_name).decode("utf-8")
+        embedded_name = next(name for name in names if name.endswith("images/article-1-image-1.png"))
+        embedded_data = archive.read(embedded_name)
+    assert 'src="images/article-1-image-1.png"' in article
+    assert embedded_data == b"fake-png-image-bytes"
     assert "<h2>Section heading</h2>" in article
     assert "<strong>bold</strong>" in article
     assert "<em>emphasis</em>" in article
