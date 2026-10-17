@@ -17,6 +17,7 @@ import yaml
 from magger.cli import _load_state, _rss_summary
 from magger.feeds import article_id, canonical_url, fetch_recent
 from magger.magazine import build_epub
+from magger.pdfmagazine import build_pdf
 from magger.delivery import send_to_kindle
 
 
@@ -424,12 +425,17 @@ def publish(args):
     selected = [article for article in selected if article["id"] not in seen]
     if not selected:
         raise ValueError("No new articles approved. Nothing was sent.")
-    output = Path(args.output or ("dist/magger-" + datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d") + ".epub"))
+    output_format = getattr(args, "format", "pdf")
+    extension = ".pdf" if output_format == "pdf" else ".epub"
+    output = Path(args.output or ("dist/magger-" + datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d") + extension))
     for article in selected:
         fetch_article_content(article)
-    build_epub(selected, settings, output)
+    if output_format == "pdf":
+        build_pdf(selected, settings, output)
+    else:
+        build_epub(selected, settings, output)
     if args.no_email:
-        report(f"Preview EPUB built with {len(selected)} approved articles; no email sent and state unchanged.")
+        report(f"Preview {output_format.upper()} built with {len(selected)} approved articles; no email sent and state unchanged.")
     else:
         send_to_kindle(output)
         now = datetime.now(timezone.utc)
@@ -462,6 +468,7 @@ def main():
     q.add_argument("--editorial", default="config/editorial.yml")
     q.add_argument("--state", default="data/seen.json")
     q.add_argument("--output")
+    q.add_argument("--format", choices=("pdf", "epub"), default="pdf", help="Output format (default: pdf).")
     q.add_argument("--no-email", action="store_true")
     args = p.parse_args()
     raise SystemExit(review(args) if args.command == "review" else publish(args))
