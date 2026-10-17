@@ -95,7 +95,7 @@ def main() -> None:
     parser.add_argument("--editorial", default="config/editorial.yml")
     parser.add_argument("--state", default="data/seen.json")
     parser.add_argument("--output", default=None)
-    parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+    parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL") or "gpt-4o-mini")
     parser.add_argument("--no-email", action="store_true", help="Build the EPUB without sending email.")
     args = parser.parse_args()
     raise SystemExit(run(args))
