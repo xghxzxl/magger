@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,32 @@ def build_epub(
         rationale = html.escape(str(article.get("rationale", "")))
         content_html = str(article.get("content_html") or "").strip()
         full_text = article.get("full_text") or ""
+        embedded_images = article.get("embedded_images") or {}
+        image_paths = {}
+        for image_index, (image_url, image) in enumerate(embedded_images.items(), 1):
+            extension = image.get("extension", ".jpg")
+            file_name = f"images/article-{i}-image-{image_index}{extension}"
+            item = epub.EpubItem(
+                uid=f"article-{i}-image-{image_index}",
+                file_name=file_name,
+                media_type=image["media_type"],
+                content=image["data"],
+            )
+            book.add_item(item)
+            image_paths[image_url] = file_name
+        if image_paths:
+            def replace_image_src(match):
+                original = html.unescape(match.group(2))
+                local_path = image_paths.get(original)
+                if not local_path:
+                    return match.group(0)
+                return f'{match.group(1)}"{html.escape(local_path, quote=True)}"'
+            content_html = re.sub(
+                r'(<img\\b[^>]*?\\bsrc=)(["\\'])(.*?)\\2',
+                lambda match: replace_image_src(match),
+                content_html,
+                flags=re.I,
+            )
         body = [
             f"<h1>{article_title}</h1>",
             f"<p><em>{source} · {published}</em></p>",
