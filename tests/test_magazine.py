@@ -31,7 +31,8 @@ def test_build_epub_keeps_article_markup_and_adds_reading_styles(tmp_path: Path)
     with ZipFile(target) as archive:
         names = archive.namelist()
         article = next(archive.read(name).decode("utf-8") for name in names if name.endswith("article-1.xhtml"))
-        css = archive.read("OEBPS/style/magger.css").decode("utf-8")
+        css_name = next(name for name in names if name.endswith("style/magger.css"))
+        css = archive.read(css_name).decode("utf-8")
     assert "<h2>Section heading</h2>" in article
     assert "<strong>bold</strong>" in article
     assert "<em>emphasis</em>" in article
