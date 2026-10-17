@@ -1,4 +1,4 @@
-"""EPUB assembly with a table of contents and readable article text."""
+"""EPUB assembly with semantic article formatting and a table of contents."""
 from __future__ import annotations
 
 import html
@@ -10,11 +10,35 @@ from urllib.parse import urlsplit
 from ebooklib import epub
 
 
+STYLE = """
+body { font-family: serif; line-height: 1.42; margin: 5%; }
+h1 { font-size: 1.65em; margin: 0 0 0.65em; }
+h2 { font-size: 1.35em; margin: 1.25em 0 0.45em; }
+h3, h4, h5, h6 { margin: 1em 0 0.4em; }
+p { margin: 0 0 0.9em; text-indent: 0; }
+li { margin: 0 0 0.45em; }
+blockquote { margin: 0.9em 0.9em 1em; padding-left: 0.8em; border-left: 2px solid #888; }
+pre, code { font-family: monospace; white-space: pre-wrap; }
+pre { margin: 0.8em 0; padding: 0.5em; }
+figure { margin: 1em 0; }
+figcaption { font-size: 0.9em; font-style: italic; margin-top: 0.4em; }
+img { max-width: 100%; height: auto; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+th, td { border: 1px solid #888; padding: 0.3em; vertical-align: top; }
+small { font-size: 0.85em; }
+"""
+
+
 def _safe_link(url: str) -> str:
     return html.escape(url, quote=True) if urlsplit(url).scheme in ("http", "https") else ""
 
 
-def build_epub(articles: list[dict[str, Any]], settings: dict[str, Any], output_path: str | Path, edition_date: datetime | None = None) -> Path:
+def build_epub(
+    articles: list[dict[str, Any]],
+    settings: dict[str, Any],
+    output_path: str | Path,
+    edition_date: datetime | None = None,
+) -> Path:
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     edition_date = edition_date or datetime.now().astimezone()
@@ -27,7 +51,11 @@ def build_epub(articles: list[dict[str, Any]], settings: dict[str, Any], output_
     book.set_language(language)
     book.add_author("Magger Editorial Desk")
 
+    style = epub.EpubItem(uid="magger-style", file_name="style/magger.css", media_type="text/css", content=STYLE)
+    book.add_item(style)
+
     intro = epub.EpubHtml(title="Contents", file_name="intro.xhtml", lang=language)
+    intro.add_item(style)
     toc_rows = []
     for i, article in enumerate(articles, 1):
         safe_url = _safe_link(str(article.get("url", "")))
@@ -56,28 +84,36 @@ def build_epub(articles: list[dict[str, Any]], settings: dict[str, Any], output_
         published = html.escape(str(article.get("published", ""))[:10])
         summary = html.escape(str(article.get("editorial_summary", article.get("synopsis", ""))))
         rationale = html.escape(str(article.get("rationale", "")))
-        paragraphs = article.get("full_text") or []
-        if isinstance(paragraphs, str):
-            paragraphs = [p.strip() for p in paragraphs.splitlines() if p.strip()]
+        content_html = str(article.get("content_html") or "").strip()
+        full_text = article.get("full_text") or ""
         body = [
             f"<h1>{article_title}</h1>",
             f"<p><em>{source} · {published}</em></p>",
         ]
         if summary:
-            body.append(f"<p><strong>Synopsis:</strong> {summary}</p>")
-        if paragraphs:
+            body.append(f'<div class="synopsis"><h2>Synopsis</h2><p>{summary}</p></div>')
+        if content_html:
+            body.append('<hr/><h2>Article</h2><div class="article-body">' + content_html + "</div>")
+        elif full_text:
+            # Keep blank-line paragraph separators from plain-text fallback content.
+            chunks = [part.strip() for part in str(full_text).split("\n\n") if part.strip()]
+            if not chunks:
+                chunks = [part.strip() for part in str(full_text).splitlines() if part.strip()]
             body.append("<hr/><h2>Article</h2>")
-            body.extend(f"<p>{html.escape(str(p))}</p>" for p in paragraphs if str(p).strip())
+            body.extend(f"<p>{html.escape(part)}</p>" for part in chunks)
         else:
             body.append(
                 "<p><em>The publisher's full text could not be extracted. "
                 "This entry contains the available RSS synopsis rather than the complete article.</em></p>"
             )
+        if article.get("content_fallback"):
+            body.append("<p><em>Publisher formatting and full text were unavailable; this is the feed excerpt.</em></p>")
         if rationale:
             body.append(f"<p><small>Editorial note: {rationale}</small></p>")
         if safe_url:
             body.append(f'<p><a href="{safe_url}">Open original article</a></p>')
         chapter = epub.EpubHtml(title=article_title_raw, file_name=f"article-{i}.xhtml", lang=language)
+        chapter.add_item(style)
         chapter.content = "".join(body)
         book.add_item(chapter)
         spine.append(chapter)
