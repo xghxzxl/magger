@@ -1,0 +1,6 @@
+# Replace or extend these examples with feeds relevant to your interests.
+feeds:
+  - name: The Guardian - Technology
+    url: https://www.theguardian.com/technology/rss
+  - name: Hacker News
+    url: https://hnrss.org/frontpage
