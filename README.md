@@ -1,18 +1,18 @@
 # Magger
 
-Magger turns RSS feeds into a high-signal weekly magazine and sends it to a Kindle email address. The pipeline runs in GitHub Actions; configuration, editorial rules, source code, tests, and deduplication state live in this repository.
+Magger turns recent RSS/Atom entries into a weekly EPUB magazine and can send it to a Kindle email address. Everything runs in GitHub Actions; no LLM or paid AI API is used.
 
 ## What it does
 
 1. Reads feeds in `config/feeds.yml`.
-2. Collects RSS/Atom metadata and feed excerpts from the configured lookback window. It does not scrape full publisher pages.
-3. Deduplicates canonical URLs and filters articles already processed in prior successful editions.
-4. Asks an LLM to judge candidates against the written criteria in `config/editorial.yml`.
-5. Builds a navigable EPUB with editorial summaries, source/feed attribution, publication dates, and a short rationale.
+2. Collects entries published within the configured lookback window, using feed metadata and excerpts only.
+3. Deduplicates canonical URLs and filters articles included in previous successful editions.
+4. Selects the newest unseen entries up to `max_articles`. This is date/feed-order selection, **not semantic or quality judging**.
+5. Builds a navigable EPUB with the RSS excerpt (or a fallback if no excerpt exists), source/feed attribution, publication date, and source link.
 6. Optionally emails the EPUB to the configured Kindle address.
 7. Uploads the EPUB as a GitHub Actions artifact (30-day retention) and persists deduplication state after successful delivery.
 
-## Configure feeds and editorial policy
+## Configure feeds and issue settings
 
 Edit `config/feeds.yml`:
 
@@ -22,7 +22,7 @@ feeds:
     url: https://example.com/feed.xml
 ```
 
-Edit `config/editorial.yml` to tune the lookback window, issue size, summary length, topics, and selection threshold. The LLM receives the criteria as data and is instructed to judge only supplied feed metadata/excerpts, not instructions embedded in source content.
+Edit `config/editorial.yml` to configure the issue:
 
 ```yaml
 magazine:
@@ -32,16 +32,9 @@ magazine:
   max_articles: 12
   lookback_days: 7
   summary_max_words: 100
-
-editorial:
-  criteria:
-    - Prefer original reporting and thoughtful analysis.
-    - Prefer useful, novel, evidence-based ideas.
-    - Penalize clickbait, duplicates, and promotional material.
-  include_topics: [technology, science, culture, policy, ideas]
-  exclude_topics: [gambling promotions, affiliate roundups, obvious advertisements]
-  minimum_score: 6
 ```
+
+The summaries are shortened RSS excerpts, not AI-written summaries or claims that Magger has read the full article. Articles are chosen by publication date, so promotional posts and lower-quality entries can be included; tune your feed list to control the results.
 
 ## Set up secure Kindle delivery
 
@@ -49,7 +42,6 @@ In **Settings → Secrets and variables → Actions**, add these repository secr
 
 | Secret | Purpose |
 | --- | --- |
-| `OPENAI_API_KEY` | API key used for editorial judging |
 | `SMTP_USERNAME` | SMTP account username |
 | `SMTP_PASSWORD` | SMTP password or app password |
 | `KINDLE_EMAIL` | Your personal Send-to-Kindle email address |
@@ -59,17 +51,16 @@ Optional repository variables:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Editorial model |
 | `SMTP_HOST` | `smtp.gmail.com` | SMTP hostname |
 | `SMTP_PORT` | `465` | SMTP SSL port |
 
-Delivery uses SMTP over SSL. For Gmail, use an app password if available. In your Kindle settings, confirm the correct Send-to-Kindle address and add the sender address to approved personal document senders if required. Confirm current Amazon delivery limits and your mail provider's attachment limits.
+For Gmail, use an app password if available. In your Kindle settings, confirm the correct Send-to-Kindle address and add the sender address to approved personal document senders if required.
 
-**Never commit API keys, SMTP passwords, or personal recipient addresses to tracked files.** Secrets are injected into the Actions step at runtime. `data/seen.json` stores article IDs, URLs, and timestamps, not credentials.
+**Never commit passwords or personal recipient addresses to tracked files.** The workflow injects secrets at runtime. No OpenAI API key is needed.
 
 ## Run it
 
-After configuring feeds, criteria, and secrets, open **Actions → Magger Weekly → Run workflow**. The default manual run delivers the EPUB. Set **Build an EPUB but skip Kindle email delivery** to true to preview without sending.
+Open **Actions → Magger Weekly → Run workflow**. The default manual run sends the EPUB. Set **Build an EPUB but skip Kindle email delivery** to true to preview without sending.
 
 The workflow is scheduled for **Sunday at 12:00 UTC**; GitHub may delay scheduled runs during busy periods. It declares `contents: write` so the workflow can commit `data/seen.json`. If your repository's Actions settings disallow write tokens, enable the required contents write permission.
 
@@ -78,7 +69,6 @@ Local run (Python 3.11+):
 ```bash
 python -m pip install -e ".[test]"
 pytest -q
-export OPENAI_API_KEY="..."
 python -m magger --no-email
 ```
 
@@ -88,29 +78,13 @@ The command writes an EPUB under `dist/`. Use a temporary state path when experi
 python -m magger --state /tmp/magger-seen.json --output /tmp/magger.epub --no-email
 ```
 
-## Design notes
-
-- **GitHub-native orchestration:** schedule, manual dispatch, tests, artifact retention, and state persistence run in Actions.
-- **Editorial transparency:** selected stories include source link, feed, publication date, summary, and rationale.
-- **Metadata-only input:** summaries are based on RSS metadata and feed excerpts; Magger does not fetch or reproduce full article text. Respect publisher terms and rights.
-- **Deduplication:** common tracking parameters are removed from URLs. Successful deliveries record checked articles in `data/seen.json` with bounded history.
-- **LLM limitations:** summaries and scores may be wrong; follow the source for context and verify important claims.
-- **Cost:** each new candidate invokes the configured model once. Keep feeds and lookback periods focused.
-- **Failures:** malformed feeds are warned about and skipped. Editorial API or delivery failures fail the workflow; state is not committed.
-- **Preview:** `--no-email` builds an EPUB but should not consume candidates in deduplication history.
-
 ## Layout
 
 - `config/feeds.yml` — RSS/Atom sources
-- `config/editorial.yml` — issue settings and editorial criteria
+- `config/editorial.yml` — issue settings
 - `magger/feeds.py` — parsing, date filtering, URL normalization
-- `magger/editor.py` — LLM scoring and summaries
 - `magger/magazine.py` — EPUB generation
 - `magger/delivery.py` — SMTP delivery
-- `magger/cli.py` — pipeline and state
+- `magger/cli.py` — RSS-only pipeline and state
 - `.github/workflows/magger.yml` — weekly/manual Actions workflow
 - `tests/` — unit tests
-
-## Possible next steps
-
-Duplicate-story clustering, optional human review, per-feed weighting, feed health reporting, and additional delivery providers are natural follow-ups. The first version deliberately keeps the pipeline small and auditable.
