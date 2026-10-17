@@ -116,19 +116,20 @@ def build_epub(
             )
         body = [
             f"<h1>{article_title}</h1>",
-            f"<p><em>{source} · {published}</em></p>",
+            f'<p class="article-byline">{source} · {published}</p>',
         ]
-        if summary:
-            body.append(f'<div class="synopsis"><h2>Synopsis</h2><p>{summary}</p></div>')
+        if summary and settings.get("include_synopsis", False):
+            body.append(f'<div class="synopsis"><h2>Editor's note</h2><p>{summary}</p></div>')
         if content_html:
-            body.append('<hr/><h2>Article</h2><div class="article-body">' + content_html + "</div>")
+            body.append('<div class="article-body">' + content_html + "</div>")
         elif full_text:
             # Keep blank-line paragraph separators from plain-text fallback content.
             chunks = [part.strip() for part in str(full_text).split("\n\n") if part.strip()]
             if not chunks:
                 chunks = [part.strip() for part in str(full_text).splitlines() if part.strip()]
-            body.append("<hr/><h2>Article</h2>")
+            body.append('<div class="article-body">')
             body.extend(f"<p>{html.escape(part)}</p>" for part in chunks)
+            body.append("</div>")
         else:
             body.append(
                 "<p><em>The publisher's full text could not be extracted. "
@@ -136,7 +137,7 @@ def build_epub(
             )
         if article.get("content_fallback"):
             body.append("<p><em>Publisher formatting and full text were unavailable; this is the feed excerpt.</em></p>")
-        if rationale:
+        if rationale and settings.get("include_editorial_note", False):
             body.append(f"<p><small>Editorial note: {rationale}</small></p>")
         if safe_url:
             body.append(f'<p><a href="{safe_url}">Open original article</a></p>')
