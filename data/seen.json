@@ -54,6 +54,21 @@
       "url": "https://www.theguardian.com/technology/2026/oct/17/fake-linda-and-me-mystery-fraudster-stole-my-byline",
       "published": "2026-10-17T11:00:30+00:00",
       "checked_at": "2026-10-17T19:00:05.711971+00:00"
+    },
+    "73908bf8c65eef7bdfa260e726f519e95321610255e89a2d7f112f06cf5613aa": {
+      "url": "https://blog.scottstevenson.net/p/pattern-matching-beats-narrative",
+      "published": "2026-10-17T18:34:13+00:00",
+      "checked_at": "2026-10-17T21:04:35.155444+00:00"
+    },
+    "4c6ee6feb9a349cf912dbe5d716ba0e14ee9bb510e407a6bd79c375944df0e87": {
+      "url": "https://www.theguardian.com/technology/2026/oct/17/artificial-intelligence-ai-labour-government-safety-uk-extremism",
+      "published": "2026-10-17T11:33:20+00:00",
+      "checked_at": "2026-10-17T21:04:35.155444+00:00"
+    },
+    "cac24968e5aa0d5bf28d3c60ce48378a0d33bee3f4a7e39824b4f1e7eb461454": {
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "published": "2026-10-17T08:21:25+00:00",
+      "checked_at": "2026-10-17T21:04:35.155444+00:00"
     }
   }
 }
