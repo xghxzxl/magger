@@ -73,15 +73,18 @@ def run(args: argparse.Namespace) -> int:
 
     # Only mark candidates as seen after a successful run/delivery.
     # Keep a bounded history to prevent state growing forever.
-    for article in unseen:
-        seen[article["id"]] = {"url": article["url"], "published": article["published"], "checked_at": now.isoformat()}
-    cutoff = now - timedelta(days=max(90, lookback * 12))
-    state["seen"] = {
-        key: value for key, value in seen.items()
-        if value.get("checked_at") and datetime.fromisoformat(value["checked_at"]) >= cutoff
-    }
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if not args.no_email:
+        for article in unseen:
+            seen[article["id"]] = {"url": article["url"], "published": article["published"], "checked_at": now.isoformat()}
+        cutoff = now - timedelta(days=max(90, lookback * 12))
+        state["seen"] = {
+            key: value for key, value in seen.items()
+            if value.get("checked_at") and datetime.fromisoformat(value["checked_at"]) >= cutoff
+        }
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    else:
+        print("Preview mode: deduplication state was not changed.")
     print(f"Wrote {output_path} ({output_path.stat().st_size} bytes).")
     return 0
 
