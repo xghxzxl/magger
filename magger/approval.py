@@ -211,6 +211,43 @@ class ArticleParser(MetaParser):
             self._emit(html.escape(data, quote=False))
 
 
+
+def _download_article_images(content_html, page_url, max_images=12, max_bytes=5_000_000):
+    """Download article images for embedding; skip unsupported, oversized, or unavailable assets."""
+    found = re.findall(r'<img\\b[^>]*?src=["\']([^"\']+)["\']', content_html, flags=re.I)
+    embedded = {}
+    total_bytes = 0
+    allowed_types = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+    }
+    for raw_url in found:
+        image_url = urljoin(page_url, html.unescape(raw_url.strip()))
+        if image_url in embedded or len(embedded) >= max_images or urlsplit(image_url).scheme not in ("http", "https"):
+            continue
+        try:
+            req = urllib.request.Request(image_url, headers={"User-Agent": "Mozilla/5.0 (compatible; Magger/0.1)"})
+            with urllib.request.urlopen(req, timeout=12) as response:
+                media_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+                if media_type not in allowed_types:
+                    print(f"Skipping unsupported article image ({media_type or 'unknown type'}): {image_url}")
+                    continue
+                declared = response.headers.get("Content-Length")
+                if declared and int(declared) > max_bytes:
+                    print(f"Skipping oversized article image: {image_url}")
+                    continue
+                data = response.read(max_bytes + 1)
+                if len(data) > max_bytes or total_bytes + len(data) > 20_000_000:
+                    print(f"Skipping oversized article image: {image_url}")
+                    continue
+                embedded[image_url] = {"data": data, "media_type": media_type, "extension": allowed_types[media_type]}
+                total_bytes += len(data)
+        except Exception as exc:
+            print(f"Warning: could not embed article image {image_url}: {exc}")
+    return embedded
+
+
 def fetch_article_content(article):
     """Fetch and preserve readable HTML structure, falling back to the RSS synopsis."""
     url = article.get("url", "")
@@ -235,6 +272,7 @@ def fetch_article_content(article):
             if parser.meta.get("og:title") or parser.title:
                 article["title"] = html.unescape((parser.meta.get("og:title") or " ".join(parser.title)).strip())
             article["content_html"] = chosen_html[:100_000]
+            article["embedded_images"] = _download_article_images(article["content_html"], final_url)
             article["full_text"] = "\n\n".join(parser.main_paragraphs or parser.paragraphs)[:30000].strip()
             return
     except Exception as exc:
