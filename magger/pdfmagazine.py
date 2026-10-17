@@ -15,37 +15,37 @@ from playwright.sync_api import sync_playwright
 
 
 PRINT_CSS = """
-@page { size: Letter; margin: 0.72in 0.78in 0.75in; }
+@page { size: Letter; margin: 0.52in 0.58in 0.55in; }
 * { box-sizing: border-box; }
 html { color: #171717; background: #fff; }
 body { margin: 0; font-family: Georgia, 'Palatino Linotype', Palatino, serif;
-       font-size: 11pt; line-height: 1.58; overflow-wrap: break-word; }
+       font-size: 10.5pt; line-height: 1.4; overflow-wrap: break-word; }
 h1 { font-size: 28pt; line-height: 1.12; font-weight: normal; letter-spacing: -0.025em;
-     margin: 0 0 12pt; break-after: avoid; }
-h2 { font-size: 18pt; line-height: 1.2; font-weight: normal; margin: 25pt 0 9pt; break-after: avoid; }
-h3, h4, h5, h6 { font-size: 13pt; line-height: 1.25; margin: 20pt 0 7pt; break-after: avoid; }
-p { margin: 0 0 11pt; orphans: 3; widows: 3; }
+     margin: 0 0 8pt; break-after: avoid; }
+h2 { font-size: 15.5pt; line-height: 1.2; font-weight: normal; margin: 17pt 0 6pt; break-after: avoid; }
+h3, h4, h5, h6 { font-size: 11.5pt; line-height: 1.25; margin: 13pt 0 5pt; break-after: avoid; }
+p { margin: 0 0 7pt; orphans: 3; widows: 3; }
 .article-meta { font: 8.5pt/1.45 Arial, sans-serif; letter-spacing: .025em;
-                color: #555; border-bottom: .5pt solid #bbb; padding-bottom: 13pt; margin-bottom: 20pt; }
-.article-body img { display: block; max-width: 100%; max-height: 8.5in; height: auto;
-                    object-fit: contain; margin: 18pt auto; }
-figure { margin: 18pt 0; break-inside: avoid; }
+                color: #555; border-bottom: .5pt solid #bbb; padding-bottom: 8pt; margin-bottom: 12pt; }
+.article-body img { display: block; max-width: 100%; max-height: 6.8in; height: auto;
+                    object-fit: contain; margin: 10pt auto; }
+figure { margin: 10pt 0; break-inside: avoid; }
 figcaption { font: 8.5pt/1.4 Arial, sans-serif; color: #555; text-align: center; margin-top: 6pt; }
-blockquote { margin: 16pt 12pt; padding-left: 12pt; border-left: 2pt solid #aaa; font-style: italic; }
-ul, ol { padding-left: 22pt; margin: 10pt 0 15pt; }
-li { margin-bottom: 5pt; }
-hr { border: 0; border-top: .5pt solid #aaa; margin: 24pt auto; width: 28%; }
+blockquote { margin: 10pt 8pt; padding-left: 10pt; border-left: 2pt solid #aaa; font-style: italic; }
+ul, ol { padding-left: 20pt; margin: 6pt 0 9pt; }
+li { margin-bottom: 2pt; }
+hr { border: 0; border-top: .5pt solid #aaa; margin: 14pt auto; width: 28%; }
 pre, code { font-family: monospace; white-space: pre-wrap; font-size: 9pt; }
-table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 15pt 0; break-inside: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 9pt 0; break-inside: auto; }
 tr { break-inside: avoid; }
-th, td { border: .5pt solid #aaa; padding: 5pt; vertical-align: top; }
+th, td { border: .5pt solid #aaa; padding: 3pt; vertical-align: top; }
 a { color: inherit; text-decoration: underline; text-decoration-color: #999; }
 .cover { min-height: 8.8in; display: flex; flex-direction: column; justify-content: center; }
 .kicker { font: 9pt Arial, sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #555; }
 .subtitle { font-size: 14pt; color: #555; margin-top: 0; }
 .contents { break-before: page; }
-.contents li { margin: 0 0 12pt; }
-.contents .source { display: block; font: 8.5pt Arial, sans-serif; color: #666; margin-top: 3pt; }
+.contents li { margin: 0 0 7pt; }
+.contents .source { display: block; font: 8.5pt Arial, sans-serif; color: #666; margin-top: 2pt; }
 """
 
 
@@ -117,7 +117,7 @@ def build_pdf(
             f'<span class="source">{source}</span></li>'
         )
     cover_html = f"""<!doctype html><html><head><meta charset="utf-8"><style>{PRINT_CSS}
-    .contents h2 {{ margin-top: 24pt; }}
+    .contents h2 {{ margin-top: 16pt; }}
     </style></head><body>
     <section class="cover"><div class="kicker">Magger Weekly</div><h1>{html.escape(title)}</h1>
     <p class="subtitle">{html.escape(subtitle)}</p><p>{edition_date.date().isoformat()}</p></section>
@@ -130,7 +130,7 @@ def build_pdf(
             page = browser.new_page()
             page.set_content(cover_html, wait_until="load")
             temp_pdfs.append(page.pdf(format="Letter", print_background=True, prefer_css_page_size=True,
-                                      margin={"top": "0.72in", "bottom": "0.75in", "left": "0.78in", "right": "0.78in"}))
+                                      margin={"top": "0.52in", "bottom": "0.55in", "left": "0.58in", "right": "0.58in"}))
             for article in articles:
                 page.set_content(_article_html(article), wait_until="load")
                 page.evaluate("""async () => {
@@ -141,7 +141,7 @@ def build_pdf(
                 }""")
                 temp_pdfs.append(page.pdf(
                     format="Letter", print_background=True, prefer_css_page_size=True,
-                    margin={"top": "0.72in", "bottom": "0.75in", "left": "0.78in", "right": "0.78in"},
+                    margin={"top": "0.52in", "bottom": "0.55in", "left": "0.58in", "right": "0.58in"},
                 ))
         finally:
             browser.close()
