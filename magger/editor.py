@@ -60,8 +60,9 @@ def judge_articles(
         try:
             verdict = json.loads(raw)
             score = max(0, min(10, int(verdict.get("score", 0))))
-            summary = " ".join(str(verdict.get("summary", "")).split())
-            selected = bool(verdict.get("selected", False)) and score >= minimum_score and bool(summary)
+            summary_words = " ".join(str(verdict.get("summary", "")).split()).split()
+            summary = " ".join(summary_words[:max_words])
+            selected = verdict.get("selected") is True and score >= minimum_score and bool(summary)
             results.append({
                 **article,
                 "score": score,
