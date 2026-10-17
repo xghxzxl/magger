@@ -40,3 +40,40 @@ def test_publish_rejects_invalid_candidate_number_without_delivery(tmp_path, mon
 def test_manual_article_rejects_non_http_urls():
     with pytest.raises(ValueError, match="Invalid http"):
         approval.manual_article("file:///etc/passwd")
+
+
+
+def test_article_parser_prefers_main_content_and_ignores_navigation():
+    parser = approval.ArticleParser()
+    parser.feed("""
+    <nav><p>Navigation junk that should never appear in article.</p></nav>
+    <main><article>
+      <h1>Story</h1>
+      <p>This is the first substantial paragraph in the story, long enough to be retained.</p>
+      <p>This is another substantial paragraph with details that belong in the article.</p>
+    </article></main>
+    <footer><p>Footer junk that should never appear in article.</p></footer>
+    """)
+    assert len(parser.main_paragraphs) == 2
+    assert all("Navigation junk" not in p and "Footer junk" not in p for p in parser.main_paragraphs)
+
+
+def test_epub_has_contents_list_and_full_text(tmp_path):
+    from zipfile import ZipFile
+    from magger.magazine import build_epub
+
+    output = tmp_path / "magazine.epub"
+    build_epub([{
+        "title": "A Real Story",
+        "url": "https://example.com/story",
+        "published": "2026-10-17",
+        "feed": "Example",
+        "editorial_summary": "A short synopsis.",
+        "full_text": ["First full paragraph with actual reporting.", "Second full paragraph with more details."],
+    }], {"title": "Magger"}, output)
+    with ZipFile(output) as archive:
+        xhtml = "\n".join(archive.read(name).decode("utf-8") for name in archive.namelist() if name.endswith(".xhtml"))
+    assert "In this issue" in xhtml
+    assert "A Real Story" in xhtml
+    assert "First full paragraph with actual reporting." in xhtml
+    assert "Second full paragraph with more details." in xhtml
