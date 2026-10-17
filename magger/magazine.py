@@ -102,14 +102,15 @@ def build_epub(
             image_paths[image_url] = file_name
         if image_paths:
             def replace_image_src(match):
-                original = html.unescape(match.group(2))
+                original = html.unescape(match.group(3))
                 local_path = image_paths.get(original)
                 if not local_path:
                     return match.group(0)
-                return f'{match.group(1)}"{html.escape(local_path, quote=True)}"'
+                quote = match.group(2)
+                return f'{match.group(1)}{quote}{html.escape(local_path, quote=True)}{quote}'
             content_html = re.sub(
-                r'(<img\\b[^>]*?\\bsrc=)(["\\'])(.*?)\\2',
-                lambda match: replace_image_src(match),
+                r'(<img\b[^>]*?\bsrc=)(["\'])(.*?)\2',
+                replace_image_src,
                 content_html,
                 flags=re.I,
             )
