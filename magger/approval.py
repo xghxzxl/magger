@@ -261,6 +261,20 @@ def _reader_extract(raw_html, base_url):
         document = Document(raw_html, url=base_url)
         reader_html = document.summary(html_partial=True)
         reader_title = document.short_title().strip()
+        # Prefer the publisher's original semantic article subtree when available.
+        # Reader-mode cleanup can occasionally discard headings or figures.
+        original_parser = ArticleParser(base_url)
+        original_parser.feed(raw_html)
+        original_main = "".join(original_parser.main_html).strip()
+        original_visible = html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", original_main))).strip()
+        if original_main and len(original_visible) >= 100:
+            return (
+                reader_title,
+                original_main,
+                original_parser.main_paragraphs or original_parser.paragraphs,
+                len(original_visible),
+            )
+
         parser = ArticleParser(base_url)
         parser.feed(reader_html)
         cleaned = "".join(parser.all_html).strip()
