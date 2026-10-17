@@ -1,0 +1,26 @@
+magazine:
+  title: Magger Weekly
+  subtitle: A curated briefing from your feeds
+  language: en
+  max_articles: 12
+  lookback_days: 7
+  summary_max_words: 100
+
+editorial:
+  # The LLM evaluates every candidate against these explicit criteria.
+  criteria:
+    - Prefer substantive reporting, original research, and thoughtful analysis over announcements or promotional material.
+    - Prefer useful, novel, evidence-based ideas with implications beyond one organization.
+    - Prioritize relevance to technology, science, culture, policy, and the future; adjust this list to your interests.
+    - Penalize clickbait, duplicate coverage, thin commentary, and articles whose feed metadata provides too little evidence to judge.
+  include_topics:
+    - technology
+    - science
+    - culture
+    - policy
+    - ideas
+  exclude_topics:
+    - gambling promotions
+    - affiliate roundups
+    - obvious advertisements
+  minimum_score: 6
