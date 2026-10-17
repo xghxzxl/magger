@@ -1,6 +1,6 @@
 """Two-stage editorial review for Magger."""
 from __future__ import annotations
-import argparse, html, json, os, urllib.request
+import argparse, html, json, os, re, urllib.request
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -88,7 +88,7 @@ def publish(args):
     selected=[a for a in selected if a["id"] not in seen]
     if not selected: raise ValueError("No new articles approved. Nothing was sent.")
     output=Path(args.output or ("dist/magger-"+datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d")+".epub"))
-    build_epub(selected,settings,output)
+    for article in selected:\n        fetch_article_content(article)\n    build_epub(selected,settings,output)
     if args.no_email: report(f"Preview EPUB built with {len(selected)} approved articles; no email sent and state unchanged.")
     else:
         send_to_kindle(output); now=datetime.now(timezone.utc)
