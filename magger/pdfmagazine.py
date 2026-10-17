@@ -130,9 +130,6 @@ def build_pdf(
             page = browser.new_page()
             page.set_content(cover_html, wait_until="load")
             temp_pdfs.append(page.pdf(format="Letter", print_background=True, prefer_css_page_size=True,
-                                      display_header_footer=True,
-                                      header_template='<div></div>',
-                                      footer_template='<div style="font:8px Arial;color:#666;width:100%;text-align:center;"><span class="pageNumber"></span></div>',
                                       margin={"top": "0.72in", "bottom": "0.75in", "left": "0.78in", "right": "0.78in"}))
             for article in articles:
                 page.set_content(_article_html(article), wait_until="load")
@@ -144,9 +141,6 @@ def build_pdf(
                 }""")
                 temp_pdfs.append(page.pdf(
                     format="Letter", print_background=True, prefer_css_page_size=True,
-                    display_header_footer=True,
-                    header_template='<div></div>',
-                    footer_template='<div style="font:8px Arial;color:#666;width:100%;text-align:center;"><span class="pageNumber"></span></div>',
                     margin={"top": "0.72in", "bottom": "0.75in", "left": "0.78in", "right": "0.78in"},
                 ))
         finally:
