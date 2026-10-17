@@ -2,25 +2,46 @@ name: Magger Weekly
 
 on:
   schedule:
-    # GitHub scheduled workflows use UTC; this runs Sundays at 12:00 UTC.
+    # Prepare a review queue every Sunday; scheduled runs never email automatically.
     - cron: "0 12 * * 0"
   workflow_dispatch:
     inputs:
+      mode:
+        description: Choose whether to gather candidates or publish an approved draft
+        required: true
+        type: choice
+        options:
+          - review
+          - publish
+        default: review
+      draft_run_id:
+        description: Run ID of the review workflow whose artifact you are approving (publish only)
+        required: false
+        type: string
+      include:
+        description: Candidate numbers to include, comma-separated (publish only; e.g. 1,3,4)
+        required: false
+        type: string
+      extra_urls:
+        description: Additional article URLs, one per line (publish only)
+        required: false
+        type: string
       no_email:
-        description: Build an EPUB but skip Kindle email delivery
+        description: Build preview EPUB without sending it to Kindle
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: magger-weekly
   cancel-in-progress: false
 
 jobs:
-  publish:
+  magger:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -43,7 +64,30 @@ jobs:
       - name: Run tests
         run: pytest -q
 
-      - name: Build and deliver RSS-only magazine
+      - name: Prepare RSS review queue
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'review' }}
+        run: python -m magger.approval review
+
+      - name: Upload review draft
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'review' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: magger-draft-${{ github.run_id }}
+          path: draft/manifest.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Download reviewed draft
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: magger-draft-${{ inputs.draft_run_id }}
+          path: draft
+          run-id: ${{ inputs.draft_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and deliver approved edition
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' }}
         env:
           SMTP_HOST: ${{ vars.SMTP_HOST }}
           SMTP_PORT: ${{ vars.SMTP_PORT }}
@@ -51,15 +95,16 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           KINDLE_SENDER_EMAIL: ${{ secrets.KINDLE_SENDER_EMAIL }}
           KINDLE_EMAIL: ${{ secrets.KINDLE_EMAIL }}
+          APPROVED_INCLUDE: ${{ inputs.include }}
+          APPROVED_URLS: ${{ inputs.extra_urls }}
+          PREVIEW_ONLY: ${{ inputs.no_email }}
         run: |
-          if [ "${{ inputs.no_email }}" = "true" ]; then
-            python -m magger --no-email
-          else
-            python -m magger
-          fi
+          args=(publish --draft draft/manifest.json --include "$APPROVED_INCLUDE" --extra-urls "$APPROVED_URLS")
+          if [ "$PREVIEW_ONLY" = "true" ]; then args+=(--no-email); fi
+          python -m magger.approval "${args[@]}"
 
       - name: Upload EPUB artifact
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'publish'
         uses: actions/upload-artifact@v4
         with:
           name: magger-epub-${{ github.run_number }}
@@ -68,7 +113,7 @@ jobs:
           retention-days: 30
 
       - name: Persist deduplication state
-        if: success()
+        if: success() && github.event_name == 'workflow_dispatch' && inputs.mode == 'publish' && inputs.no_email != true
         run: |
           if ! git diff --quiet -- data/seen.json; then
             git config user.name "github-actions[bot]"
