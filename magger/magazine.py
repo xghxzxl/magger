@@ -54,7 +54,7 @@ def build_epub(articles: list[dict[str, Any]], settings: dict[str, Any], output_
         safe_url = _safe_link(str(article.get("url", "")))
         source = html.escape(str(article.get("feed", "RSS source")))
         published = html.escape(str(article.get("published", ""))[:10])
-        summary = html.escape(str(article.get("editorial_summary", article.get("synopsis", "")))
+        summary = html.escape(str(article.get("editorial_summary", article.get("synopsis", ""))))
         rationale = html.escape(str(article.get("rationale", "")))
         paragraphs = article.get("full_text") or []
         if isinstance(paragraphs, str):
