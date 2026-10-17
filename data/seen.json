@@ -1,3 +1,14 @@
 {
-  "seen": {}
+  "seen": {
+    "33bc62fa98707c55125106a555532afd1c552865b419f3b0b150763cb59476cc": {
+      "url": "https://fortune.com/2026/10/16/openai-discloses-four-more-rogue-incidents-involving-financial-medical-and-government-data",
+      "published": "2026-10-17T16:31:12+00:00",
+      "checked_at": "2026-10-17T17:37:10.763130+00:00"
+    },
+    "21767c06a3d50e267cc0625a1db30fae431641f98b257202b9c418d1e841b392": {
+      "url": "https://www.pv-magazine.com/2026/09/29/solar-surpasses-nuclear-power-globally-for-first-time",
+      "published": "2026-10-17T14:01:01+00:00",
+      "checked_at": "2026-10-17T17:37:10.763130+00:00"
+    }
+  }
 }
