@@ -47,6 +47,10 @@ feeds:
   - name: MIT Sloan Management Review
     url: http://feeds.feedburner.com/mitsmr
 
+  # Independent writing on Muslim nonprofits, leadership, and Islamic estate planning.
+  - name: Working Towards Ehsan Newsletter
+    url: https://ehsan.substack.com/feed
+
   # International affairs, conflict analysis, and Middle East / global geopolitics.
   - name: International Crisis Group
     url: https://www.crisisgroup.org/rss.xml
