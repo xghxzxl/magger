@@ -32,3 +32,25 @@ feeds:
     url: https://newsletter.pragmaticengineer.com/feed
   - name: LeadDev - The Shift
     url: https://leaddeveic.substack.com/feed
+
+  # Philosophy, history, and ideas: essay-led publications, not academic journals.
+  - name: Aeon
+    url: https://aeon.co/feed.rss
+  - name: JSTOR Daily
+    url: https://daily.jstor.org/feed/
+  - name: London Review of Books
+    url: https://www.lrb.co.uk/feeds/rss
+  - name: LSE Review of Books
+    url: https://blogs.lse.ac.uk/lsereviewofbooks/feed/
+
+  # Organizational behavior, leadership, and management practice.
+  - name: MIT Sloan Management Review
+    url: http://feeds.feedburner.com/mitsmr
+
+  # International affairs, conflict analysis, and Middle East / global geopolitics.
+  - name: International Crisis Group
+    url: https://www.crisisgroup.org/rss.xml
+  - name: Foreign Affairs
+    url: https://www.foreignaffairs.com/rss.xml
+  - name: War on the Rocks
+    url: https://warontherocks.com/feed/
