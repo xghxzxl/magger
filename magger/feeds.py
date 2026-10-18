@@ -1,4 +1,4 @@
-"""RSS ingestion; intentionally uses feed metadata rather than scraping publishers."""
+""""RSS ingestion; intentionally uses feed metadata rather than scraping publishers."""
 from __future__ import annotations
 
 import calendar
@@ -13,7 +13,22 @@ import feedparser
 
 
 def _parse_date(entry: dict[str, Any]) -> datetime | None:
-    for key in ("published", "updated", "created"):
+    """Prefer the original publication date over an entry's later update date.
+
+    Some feeds include both a publication date and a recent updated timestamp.
+    Prefer feedparser's parsed date for each field before falling back to its text
+    representation, so an unparseable published string cannot make us silently
+    treat an old story as newly published.
+    """
+    for key in ("published", "created", "updated"):
+        parsed_key = f"{key}_parsed"
+        value = entry.get(parsed_key)
+        if value:
+            try:
+                return datetime.fromtimestamp(calendar.timegm(value), tz=timezone.utc)
+            except (TypeError, ValueError, OverflowError):
+                pass
+
         value = entry.get(key)
         if value:
             try:
@@ -21,13 +36,6 @@ def _parse_date(entry: dict[str, Any]) -> datetime | None:
                 if dt.tzinfo is None:
                     dt = dt.replace(tzinfo=timezone.utc)
                 return dt.astimezone(timezone.utc)
-            except (TypeError, ValueError, OverflowError):
-                pass
-    for key in ("published_parsed", "updated_parsed"):
-        value = entry.get(key)
-        if value:
-            try:
-                return datetime.fromtimestamp(calendar.timegm(value), tz=timezone.utc)
             except (TypeError, ValueError, OverflowError):
                 pass
     return None
