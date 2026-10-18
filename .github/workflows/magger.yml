@@ -1,12 +1,8 @@
 name: Magger Weekly
 
+# Security: all runs are manually dispatched by users with repository write access.
+# No push, pull-request, or scheduled triggers.
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    # Prepare a review queue every Sunday; scheduled runs never email automatically.
-    - cron: "0 12 * * 0"
   workflow_dispatch:
     inputs:
       mode:
