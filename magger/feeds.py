@@ -1,4 +1,4 @@
-""""RSS ingestion; intentionally uses feed metadata rather than scraping publishers."""
+"""RSS ingestion; intentionally uses feed metadata rather than scraping publishers."""
 from __future__ import annotations
 
 import calendar
