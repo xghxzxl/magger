@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import time
 from unittest.mock import patch
 
 from magger.feeds import article_id, canonical_url, fetch_recent
@@ -23,3 +24,22 @@ def test_fetch_recent_filters_old_and_undated_entries():
     assert len(result) == 1
     assert result[0]["title"] == "Recent"
     assert result[0]["feed"] == "Example"
+
+
+
+def test_fetch_recent_does_not_treat_old_published_story_as_new_updated_story():
+    now = datetime(2026, 10, 17, tzinfo=timezone.utc)
+    parsed = type("Feed", (), {})()
+    parsed.bozo = False
+    parsed.entries = [{
+        "title": "DataJunction as Netflix’s answer to the missing piece of the modern data stack",
+        "link": "https://netflixtechblog.medium.com/datajunction-example",
+        # Some feeds expose a non-RFC published string but a valid parsed date.
+        "published": "Feb 24, 2026",
+        "published_parsed": time.strptime("2026-02-24", "%Y-%m-%d"),
+        "updated": (now - timedelta(days=1)).strftime("%a, %d %b %Y %H:%M:%S +0000"),
+        "updated_parsed": time.strptime((now - timedelta(days=1)).strftime("%Y-%m-%d"), "%Y-%m-%d"),
+    }]
+    with patch("magger.feeds.feedparser.parse", return_value=parsed):
+        result = fetch_recent([{"name": "Netflix TechBlog", "url": "https://feed.test/rss"}], 7, now=now)
+    assert result == []
