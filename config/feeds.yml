@@ -26,21 +26,30 @@ feeds:
     url: https://blog.cloudflare.com/rss/
   - name: Martin Fowler
     url: https://martinfowler.com/feed.atom
+  - name: IEEE Spectrum
+    url: https://spectrum.ieee.org/rss/fulltext
 
   # Long-form reporting and engineering leadership / management.
   - name: LeadDev - The Shift
     url: https://leaddeveic.substack.com/feed
+  - name: First Round Review
+    url: https://review.firstround.com/articles/rss
 
-  # Philosophy, history, and ideas: essay-led publications, not academic journals.
+  # Philosophy, history, progress, and ideas: essay-led publications.
   - name: Aeon
     url: https://aeon.co/feed.rss
   - name: JSTOR Daily
     url: https://daily.jstor.org/feed/
   - name: LSE Review of Books
     url: https://blogs.lse.ac.uk/lsereviewofbooks/feed/
+  - name: NOEMA
+    url: https://www.noemamag.com/feed/
+  - name: Works in Progress
+    url: https://worksinprogress.co/rss.xml
+  - name: The Conversation (US)
+    url: https://theconversation.com/us/articles.atom
 
   # Organizational behavior, leadership, and management practice.
-
   # Independent writing on Muslim nonprofits, leadership, and Islamic estate planning.
   - name: Working Towards Ehsan Newsletter
     url: https://ehsan.substack.com/feed
@@ -50,3 +59,13 @@ feeds:
     url: https://www.crisisgroup.org/rss.xml
   - name: War on the Rocks
     url: https://warontherocks.com/feed/
+  - name: Lawfare
+    url: https://www.lawfaremedia.org/feeds/articles
+  - name: Just Security
+    url: https://www.justsecurity.org/feed/
+  - name: Responsible Statecraft
+    url: https://responsiblestatecraft.org/feed/
+  - name: Middle East Institute
+    url: https://mei.edu/rss.xml
+  - name: New Lines Magazine
+    url: https://newlinesmag.com/feed/
