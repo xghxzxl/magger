@@ -1,9 +1,8 @@
 name: Tests
 
+# Security: run tests only when manually dispatched by users with write access.
+# Public pull requests and pushes must not start Actions automatically.
 on:
-  push:
-    branches: ["main"]
-  pull_request:
   workflow_dispatch:
 
 permissions:
